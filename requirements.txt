@@ -1,0 +1,13 @@
+streamlit
+pandas
+matplotlib
+numpy
+seaborn
+openpyxl
+xlsxwriter
+Pillow
+streamlit-aggrid
+streamlit-extras
+streamlit-option-menu
+streamlit-chat
+plotly
