@@ -2,20 +2,9 @@
 # SOC SKILL HUB HACKATHON 2K25
 # Theme: Information Technology
 # Project ID: SHIT09
-# Title: Simple Attendance Tracker (100 Students Version)
+# Title: Simple Attendance Tracker (Enhanced Student Details)
 # ---------------------------------------------------------------
-# Developer: Pavithran B (EEE - PSNACET)
-# Background:
-# A Streamlit-based attendance tracker that can record attendance
-# for up to 100 students, visualize results, and save history.
-#
-# Features:
-# ✅ Dynamic student count (1–100)
-# ✅ Save attendance to CSV
-# ✅ Attendance % and absent list
-# ✅ Pie chart visualization
-# ✅ View past records
-# ✅ AI feedback based on attendance %
+# Developer: KAVYAVARSHINI | B.Tech AI&DS | SSMIET
 # ===============================================================
 
 import streamlit as st
@@ -23,22 +12,21 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import date
 
-# ------------------- Configuration -------------------
+# ------------------- CONFIGURATION -------------------
 st.set_page_config(page_title="Simple Attendance Tracker", page_icon="✅", layout="centered")
-
-st.title("📋 Simple Attendance Tracker")
-
+st.title("📋 Simple Attendance Tracker ")
+#st.caption("SOC Skill Hub Hackathon 2K25 — Theme: Information Technology")
 
 FILENAME = "attendance_records.csv"
 
-# ------------------- Step 1: Choose number of students -------------------
+# ------------------- SIDEBAR SETTINGS -------------------
 st.sidebar.header("⚙️ Configuration")
 num_students = st.sidebar.number_input("Number of Students", min_value=1, max_value=100, value=10, step=1)
 st.sidebar.info("You can set between 1 and 100 students.")
 
 st.subheader(f"🧑‍🎓 Enter Details for {num_students} Students")
 
-# ------------------- Step 2: Input Section -------------------
+# ------------------- INPUT SECTION -------------------
 students = []
 for i in range(num_students):
     cols = st.columns([2, 1])
@@ -48,9 +36,9 @@ for i in range(num_students):
         status = st.selectbox("Status", ["Select", "Present", "Absent"], key=f"status_{i}")
     students.append((name, status))
 
-# ------------------- Step 3: Generate Report -------------------
+# ------------------- SAVE & GENERATE REPORT -------------------
 if st.button("✅ Generate Attendance Report"):
-    missing_names = [i+1 for i, (name, _) in enumerate(students) if not name.strip()]
+    missing_names = [i + 1 for i, (name, _) in enumerate(students) if not name.strip()]
     if missing_names:
         st.warning(f"⚠️ Please enter names for students: {', '.join(map(str, missing_names))}")
     else:
@@ -59,7 +47,6 @@ if st.button("✅ Generate Attendance Report"):
         attendance_percent = int(round((present_count / num_students) * 100))
         absent_str = ", ".join(absent_students) if absent_students else "None"
 
-        # Display results
         st.success("✅ Attendance Report Generated Successfully!")
         st.markdown("---")
         st.markdown(f"**Absent:** {absent_str}")
@@ -75,57 +62,77 @@ if st.button("✅ Generate Attendance Report"):
 
         st.markdown("---")
 
-        # Summary table
+        # Save to CSV
         df = pd.DataFrame(students, columns=["Student Name", "Status"])
-        st.subheader("📊 Attendance Summary")
-        st.dataframe(df)
-
-        # ------------------- Save Data to CSV -------------------
         today = date.today().strftime("%d-%m-%Y")
         df["Date"] = today
-
         try:
             existing_df = pd.read_csv(FILENAME)
             final_df = pd.concat([existing_df, df], ignore_index=True)
         except FileNotFoundError:
             final_df = df
         final_df.to_csv(FILENAME, index=False)
-
         st.success(f"💾 Attendance saved for {today}!")
 
-        # ------------------- Pie Chart -------------------
+        # Pie chart
         st.subheader("📈 Attendance Visualization")
         fig, ax = plt.subplots()
-        ax.pie(
-            [present_count, num_students - present_count],
-            labels=["Present", "Absent"],
-            autopct="%1.1f%%",
-            colors=["#6fdc6f", "#ff6961"]
-        )
+        ax.pie([present_count, num_students - present_count],
+               labels=["Present", "Absent"],
+               autopct="%1.1f%%",
+               colors=["#6fdc6f", "#ff6961"])
         st.pyplot(fig)
 
-        # ------------------- CSV Download Button -------------------
-        csv = df.to_csv(index=False).encode("utf-8")
-        st.download_button(
-            label="⬇️ Download Today's Attendance as CSV",
-            data=csv,
-            file_name=f"attendance_{today}.csv",
-            mime="text/csv",
-        )
-
-# ------------------- Step 4: View Attendance History -------------------
+# ------------------- STUDENT-SPECIFIC DETAILS -------------------
 st.markdown("---")
-st.subheader("📅 View Attendance History")
+st.subheader("🎯 Check Specific Student Attendance Record")
 
-if st.button("📂 Load Previous Records"):
+if st.button("📂 Load Attendance Data"):
     try:
         records = pd.read_csv(FILENAME)
         st.dataframe(records)
-        days = records["Date"].nunique()
-        st.info(f"📘 Total records available: {days} day(s)")
-    except FileNotFoundError:
-        st.warning("⚠️ No previous attendance records found yet.")
 
-# ------------------- Footer -------------------
+        # Student search
+        search_name = st.text_input("🔍 Enter Student Name to Check:")
+        if search_name:
+            student_data = records[records["Student Name"].str.lower() == search_name.strip().lower()]
+            if not student_data.empty:
+                total_days = student_data["Date"].nunique()
+                present_days = (student_data["Status"].str.lower() == "present").sum()
+                absent_days = (student_data["Status"].str.lower() == "absent").sum()
+                percent = int(round((present_days / total_days) * 100))
+
+                st.success(f"✅ Attendance Record for **{search_name.title()}**")
+                st.markdown(f"- Total Days Recorded: **{total_days}**")
+                st.markdown(f"- Present: **{present_days}** days")
+                st.markdown(f"- Absent: **{absent_days}** days")
+                st.markdown(f"- Attendance Percentage: **{percent}%**")
+
+                if percent < 75:
+                    st.error("⚠️ Attendance below 75%! Needs improvement.")
+                else:
+                    st.success("👍 Good attendance record!")
+
+            else:
+                st.warning(f"No attendance data found for '{search_name}'. Please check spelling.")
+        
+        # ------------------- OVERALL ATTENDANCE -------------------
+        st.markdown("---")
+        st.subheader("📊 Overall Attendance Summary")
+
+        grouped = records.groupby("Student Name")["Status"].apply(
+            lambda x: (x.str.lower() == "present").sum() / len(x) * 100
+        ).reset_index(name="Attendance %")
+
+        st.dataframe(grouped)
+
+        overall_avg = round(grouped["Attendance %"].mean(), 2)
+        st.info(f"🌍 **Overall Class Attendance Average:** {overall_avg}%")
+
+    except FileNotFoundError:
+        st.warning("⚠️ No attendance records found yet.")
+
+# ------------------- FOOTER -------------------
 st.markdown("---")
 st.caption("Developed by **KAVYAVARSHINI | B.Tech AI&DS | SSMIET**")
+
